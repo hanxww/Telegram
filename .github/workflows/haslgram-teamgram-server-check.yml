@@ -31,6 +31,7 @@ jobs:
           bash -n deploy/teamgram/stage.sh deploy/teamgram/preflight.sh
           python -m py_compile deploy/teamgram/patch-auth.py deploy/teamgram/gifts/catalog_import.py
           python -m pip install -r deploy/teamgram/gifts/requirements.txt
+          python -c 'from telethon.tl.functions.payments import GetStarGiftsRequest; print("getStarGifts request available")'
           python -m unittest discover -s deploy/teamgram/gifts -p 'test_*.py'
       - name: Check HaslGram Android isolation
         run: |

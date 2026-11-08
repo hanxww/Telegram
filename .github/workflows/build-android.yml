@@ -36,10 +36,18 @@ jobs:
           echo "$SDK_ROOT/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
           echo "$SDK_ROOT/platform-tools" >> "$GITHUB_PATH"
 
+
       - name: Install SDK 36 and matching NDK/CMake
         shell: bash
         run: |
+          set +e
           yes | sdkmanager --licenses
+          license_status=${PIPESTATUS[1]}
+          set -e
+
+          if [ "$license_status" -ne 0 ]; then
+            exit "$license_status"
+          fi
 
           sdkmanager --install \
             'platforms;android-36' \
@@ -47,6 +55,7 @@ jobs:
             'platform-tools' \
             'ndk;27.2.12479018' \
             'cmake;3.22.1'
+
 
       - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v4

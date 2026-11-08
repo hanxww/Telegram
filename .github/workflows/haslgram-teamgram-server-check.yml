@@ -1,0 +1,34 @@
+name: HaslGram Teamgram server integration check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [haslgram-teamgram]
+    paths:
+      - 'deploy/teamgram/**'
+      - '.github/workflows/haslgram-teamgram-server-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout HaslGram integration files
+        uses: actions/checkout@v4
+      - name: Check staging scripts
+        run: |
+          bash -n deploy/teamgram/stage.sh deploy/teamgram/preflight.sh
+          python3 -m py_compile deploy/teamgram/patch-auth.py
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - name: Stage pinned Teamgram server and apply bot auth provider
+        run: bash deploy/teamgram/stage.sh "$RUNNER_TEMP/teamgram-server"
+      - name: Compile HaslGram auth adapter and Teamgram code integration
+        working-directory: ${{ runner.temp }}/teamgram-server
+        run: |
+          go test ./pkg/code/haslgram/... ./pkg/code/...

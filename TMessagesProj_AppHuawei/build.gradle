@@ -1,5 +1,10 @@
 apply plugin: 'com.android.application'
-apply plugin: 'com.huawei.agconnect'
+if ((System.getenv('HASLGRAM_HUAWEI_ENABLED') ?: 'false').toBoolean()) {
+    if (!file('agconnect-services.json').exists()) {
+        throw new GradleException('HASLGRAM_HUAWEI_ENABLED=true requires your own agconnect-services.json')
+    }
+    apply plugin: 'com.huawei.agconnect'
+}
 apply plugin: 'org.telegram.build-app-plugin'
 
 repositories {
@@ -171,4 +176,9 @@ android {
     }
 }
 
-apply plugin: 'com.google.gms.google-services'
+if ((System.getenv('HASLGRAM_FIREBASE_ENABLED') ?: 'false').toBoolean()) {
+    if (!file('google-services.json').exists()) {
+        throw new GradleException('HASLGRAM_FIREBASE_ENABLED=true requires your own google-services.json')
+    }
+    apply plugin: 'com.google.gms.google-services'
+}

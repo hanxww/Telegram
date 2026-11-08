@@ -75,7 +75,7 @@ android {
             debuggable true
             jniDebuggable true
             signingConfig signingConfigs.debug
-            applicationIdSuffix ".web"
+            applicationIdSuffix ".debug"
             minifyEnabled false
             multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), '../TMessagesProj/proguard-rules.pro'
@@ -86,7 +86,6 @@ android {
             debuggable false
             jniDebuggable false
             signingConfig signingConfigs.release
-            applicationIdSuffix ".web"
             minifyEnabled true
             shrinkResources true
             multiDexEnabled true
@@ -163,4 +162,9 @@ android {
     }
 }
 
-apply plugin: 'com.google.gms.google-services'
+if ((System.getenv('HASLGRAM_FIREBASE_ENABLED') ?: 'false').toBoolean()) {
+    if (!file('google-services.json').exists()) {
+        throw new GradleException('HASLGRAM_FIREBASE_ENABLED=true requires your own TMessagesProj_AppStandalone/google-services.json')
+    }
+    apply plugin: 'com.google.gms.google-services'
+}

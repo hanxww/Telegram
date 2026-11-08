@@ -1,9 +1,14 @@
 plugins {
     id 'com.android.application'
-    id 'com.google.gms.google-services'
-    id 'com.google.firebase.crashlytics'
 }
 apply plugin: 'org.telegram.build-app-plugin'
+if ((System.getenv('HASLGRAM_FIREBASE_ENABLED') ?: 'false').toBoolean()) {
+    if (!file('google-services.json').exists()) {
+        throw new GradleException('HASLGRAM_FIREBASE_ENABLED=true requires your own google-services.json')
+    }
+    apply plugin: 'com.google.gms.google-services'
+    apply plugin: 'com.google.firebase.crashlytics'
+}
 
 repositories {
     mavenCentral()

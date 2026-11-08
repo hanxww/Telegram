@@ -1,4 +1,4 @@
-name: HaslGram Teamgram server integration check
+name: HaslGram server, gifts importer, and Android source checks
 
 on:
   workflow_dispatch:
@@ -6,6 +6,10 @@ on:
     branches: [haslgram-teamgram]
     paths:
       - 'deploy/teamgram/**'
+      - 'docs/HASLGRAM_API_AND_GIFTS.md'
+      - 'TMessagesProj/**'
+      - 'TMessagesProj_AppStandalone/**'
+      - 'gradle.properties'
       - '.github/workflows/haslgram-teamgram-server-check.yml'
 
 permissions:
@@ -14,21 +18,36 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Checkout HaslGram integration files
         uses: actions/checkout@v4
-      - name: Check staging scripts
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check scripts and gift catalog importer
         run: |
           bash -n deploy/teamgram/stage.sh deploy/teamgram/preflight.sh
-          python3 -m py_compile deploy/teamgram/patch-auth.py
+          python -m py_compile deploy/teamgram/patch-auth.py deploy/teamgram/gifts/catalog_import.py
+          python -m pip install -r deploy/teamgram/gifts/requirements.txt
+          python -m unittest discover -s deploy/teamgram/gifts -p 'test_*.py'
+      - name: Check HaslGram Android isolation
+        run: |
+          ! grep -Eq '149\.154\.(175\.50|167\.51|175\.100|167\.91|171\.5|175\.40|167\.40|175\.117)' TMessagesProj/jni/tgnet/ConnectionsManager.cpp
+          grep -q 'BuildConfig.HASLGRAM_API_ID' TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java
+          grep -q 'HASLGRAM_MTPROTO_HOST' TMessagesProj/jni/CMakeLists.txt
+          grep -q 'APP_PACKAGE=com.haslgram.messenger' gradle.properties
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.23'
       - name: Stage pinned Teamgram server and apply bot auth provider
         run: bash deploy/teamgram/stage.sh "$RUNNER_TEMP/teamgram-server"
-      - name: Compile HaslGram auth adapter and Teamgram code integration
+      - name: Compile patched Teamgram auth packages
         working-directory: ${{ runner.temp }}/teamgram-server
         run: |
-          go test ./pkg/code/haslgram/... ./pkg/code/...
+          go test ./pkg/code/...
+          go test ./app/bff/authorization/internal/dao ./app/bff/authorization/internal/core
+          grep -q 'mtproto.ErrApiIdInvalid' app/bff/authorization/internal/dao/api.go
+          ! grep -q '12345' pkg/code/none/none_verify_code.go

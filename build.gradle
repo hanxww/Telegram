@@ -17,6 +17,14 @@ repositories {
     google()
 }
 
+def haslgramRootProperties = new Properties()
+def haslgramRootPropertiesFile = rootProject.file('local.properties')
+if (haslgramRootPropertiesFile.exists()) {
+    haslgramRootPropertiesFile.withInputStream { haslgramRootProperties.load(it) }
+}
+ext.haslgramMtprotoHost = System.getenv('HASLGRAM_MTPROTO_HOST') ?: haslgramRootProperties.getProperty('HASLGRAM_MTPROTO_HOST') ?: '127.0.0.1'
+ext.haslgramMtprotoPort = System.getenv('HASLGRAM_MTPROTO_PORT') ?: haslgramRootProperties.getProperty('HASLGRAM_MTPROTO_PORT') ?: '10443'
+
 // Strip JLatexMath fonts we don't ship (transitive AAR assets from
 // io.noties.markwon:ext-latex -> ru.noties:jlatexmath-android, ~764 KB total under
 // assets/org/scilab/forge/jlatexmath/fonts/). Has to live in the APK modules — a

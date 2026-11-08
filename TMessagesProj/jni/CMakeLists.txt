@@ -104,6 +104,15 @@ add_subdirectory(
         EXCLUDE_FROM_ALL)
 
 #tgnet
+set(HASLGRAM_MTPROTO_HOST "127.0.0.1" CACHE STRING "HaslGram MTProto gateway host")
+set(HASLGRAM_MTPROTO_PORT "10443" CACHE STRING "HaslGram MTProto gateway port")
+if(NOT HASLGRAM_MTPROTO_HOST MATCHES "^[A-Za-z0-9.-]+$")
+    message(FATAL_ERROR "HASLGRAM_MTPROTO_HOST must be a DNS name or IPv4 address")
+endif()
+if(NOT HASLGRAM_MTPROTO_PORT MATCHES "^[0-9]+$")
+    message(FATAL_ERROR "HASLGRAM_MTPROTO_PORT must be numeric")
+endif()
+
 add_library(tgnet STATIC
         openssl/aes_ige.c
         tgnet/ApiScheme.cpp
@@ -131,7 +140,9 @@ target_compile_options(tgnet PUBLIC
 set_target_properties(tgnet PROPERTIES
         ANDROID_ARM_MODE arm)
 target_compile_definitions(tgnet PUBLIC
-        HAVE_PTHREAD)
+        HAVE_PTHREAD
+        HASLGRAM_MTPROTO_HOST=\\"${HASLGRAM_MTPROTO_HOST}\\"
+        HASLGRAM_MTPROTO_PORT=${HASLGRAM_MTPROTO_PORT})
 target_include_directories(tgnet PUBLIC
         third_party/boringssl/include
         openssl/include)

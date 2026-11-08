@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">HaslGram</string>
+    <string name="AppNameBeta">HaslGram Beta</string>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
     <string name="LanguageNameInEnglish">English</string>
@@ -32,13 +32,13 @@
     <string name="DidNotGetTheCodeHelpButton">Help</string>
     <string name="DidNotGetTheCodeEditNumberButton">Edit number</string>
     <!--code enter view-->
-    <string name="YourCode">Phone verification</string>
-    <string name="SentSmsCode">We’ve sent an SMS with an activation code to your phone **%1$s**.</string>
+    <string name="YourCode">HaslGram verification</string>
+    <string name="SentSmsCode">Enter the six-digit code from **@HaslGramRegBot** for **%1$s**.</string>
     <string name="SentAppCode">We\'ve sent the code to the **Telegram** app on your other device.</string>
     <string name="SentAppCodeWithPhone">We\'ve sent the code to the **Telegram** app for %1$s on your other device.</string>
     <string name="SentAppCodeTitle">Check your Telegram messages</string>
     <string name="SentFragmentCode">Get the code for %1$s in the Anonymous Numbers section on Fragment.</string>
-    <string name="SentSmsCodeTitle">Enter code</string>
+    <string name="SentSmsCodeTitle">Enter HaslGram code</string>
     <string name="OpenFragment">Open Fragment</string>
     <string name="SentCallCode">We\'re calling your phone **%1$s**.\n\nDon\'t accept the call, Telegram will process everything automatically.</string>
     <string name="SentCallOnly">Calling your phone **%1$s** to dictate the code.</string>
@@ -49,7 +49,7 @@
     <string name="Code">Code</string>
     <string name="WrongNumber">Wrong number?</string>
     <string name="WrongCode">You entered the wrong code. Please try again.</string>
-    <string name="DidNotGetTheCode">Didn\'t get the code?</string>
+    <string name="DidNotGetTheCode">Need a new code? Request it from @HaslGramRegBot and return here.</string>
     <string name="DidNotGetTheCodeSms">Send the code as an SMS</string>
     <string name="DidNotGetTheCodeFragment">Get a code via Fragment</string>
     <string name="CancelAccountReset">Cancel account reset</string>

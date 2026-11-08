@@ -1,5 +1,34 @@
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 
+def haslgramLocalProperties = new Properties()
+def haslgramLocalPropertiesFile = rootProject.file('local.properties')
+if (haslgramLocalPropertiesFile.exists()) {
+    haslgramLocalPropertiesFile.withInputStream { haslgramLocalProperties.load(it) }
+}
+def haslgramValue = { String key, String fallback ->
+    System.getenv(key) ?: haslgramLocalProperties.getProperty(key) ?: fallback
+}
+def haslgramApiId = haslgramValue('HASLGRAM_API_ID', '0').trim()
+def haslgramApiHash = haslgramValue('HASLGRAM_API_HASH', '').trim()
+def haslgramMtprotoHost = haslgramValue('HASLGRAM_MTPROTO_HOST', '127.0.0.1').trim()
+def haslgramMtprotoPort = haslgramValue('HASLGRAM_MTPROTO_PORT', '10443').trim()
+if (!(haslgramApiId ==~ /[0-9]+/)) {
+    throw new GradleException('HASLGRAM_API_ID must be a positive integer')
+}
+if (haslgramApiHash && !(haslgramApiHash ==~ /(?i)[0-9a-f]{32}/)) {
+    throw new GradleException('HASLGRAM_API_HASH must be 32 hexadecimal characters')
+}
+if ((haslgramApiId.toInteger() > 0) != !haslgramApiHash.isEmpty()) {
+    throw new GradleException('Set both HASLGRAM_API_ID and HASLGRAM_API_HASH together')
+}
+if (!(haslgramMtprotoHost ==~ /[A-Za-z0-9.-]+/)) {
+    throw new GradleException('HASLGRAM_MTPROTO_HOST must be a DNS name or IPv4 address')
+}
+if (!(haslgramMtprotoPort ==~ /[0-9]+/) || haslgramMtprotoPort.toInteger() < 1 || haslgramMtprotoPort.toInteger() > 65535) {
+    throw new GradleException('HASLGRAM_MTPROTO_PORT must be between 1 and 65535')
+}
+
+
 apply plugin: 'com.android.library'
 apply plugin: 'org.telegram.build-plugin'
 apply plugin: 'idea'
@@ -142,6 +171,8 @@ android {
     defaultConfig {
         minSdkVersion 23
         targetSdkVersion 36
+        buildConfigField "int", "HASLGRAM_API_ID", "${haslgramApiId}"
+        buildConfigField "String", "HASLGRAM_API_HASH", "\"${haslgramApiHash}\""
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 
@@ -150,7 +181,7 @@ android {
         externalNativeBuild {
             cmake {
                 version '3.22.1'
-                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-23' //, '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
+                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-23', "-DHASLGRAM_MTPROTO_HOST=${haslgramMtprotoHost}", "-DHASLGRAM_MTPROTO_PORT=${haslgramMtprotoPort}" //, '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
                 targets 'tmessages.49'
             }
         }
@@ -250,7 +281,12 @@ def getProps(String propName) {
         return "";
     }
 }
-apply plugin: 'com.google.gms.google-services'
+if ((System.getenv('HASLGRAM_FIREBASE_ENABLED') ?: 'false').toBoolean()) {
+    if (!file('google-services.json').exists()) {
+        throw new GradleException('HASLGRAM_FIREBASE_ENABLED=true requires your own TMessagesProj/google-services.json')
+    }
+    apply plugin: 'com.google.gms.google-services'
+}
 
 task checkVisibility {
     doFirst {

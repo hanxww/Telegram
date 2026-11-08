@@ -10,7 +10,7 @@
 * В `pkg/code/none` отключён небезопасный тестовый вход `12345`; в `auth.sendCode` убран обход бота через код от действующей сессии, тестовый номер или несуществующий SMS-провайдер.
 * `preflight.sh` проверяет инфраструктуру и порты **без записи/рестарта**.
 
-**Примечание:** текущий NestJS `verifyRegistration` поглощает код и начисляет бонус 2 000 Stars единожды. Он пока не сохраняет связь между Teamgram user ID и HaslGram wallet; интерфейс подарков пока не подключён. Для повторного входа нужен новый код от бота. Все сетевые маршруты MTProto Android до своего сервера также требуют изменения.
+**Зависимость от backend (пока не проверена):** endpoint регистрации NestJS должен атомарно поглощать код бота и начислять приветственный бонус 2 000 Hasl Stars ровно один раз. Исходники NestJS не были доступны в этом репозитории, поэтому фактическая работа endpoint и связь Teamgram user ID с HaslGram wallet здесь не проверены и не изменялись. Интерфейс подарков ещё не подключён к ledger HaslGram. Для повторного входа потребуется новый код от бота.
 
 ## Шаг 1. Скопировать в VPS только конфигурацию из GitHub
 
@@ -65,3 +65,37 @@ bash deploy/teamgram/stage.sh /opt/haslgram/teamgram-server
 Источники: https://github.com/teamgram/teamgram-server , https://github.com/teamgram/teamgram-android/tree/teamgram2
 
 **Не выполняйте `docker compose up` в скопированном upstream Teamgram. Это пока исходники для разработки, не безопасный production deployment.**
+
+
+## Required runtime environment
+
+The BFF container must receive these values from a private .env/secret store before it starts:
+
+~~~dotenv
+HASLGRAM_API_ID=<your my.telegram.org api_id>
+HASLGRAM_API_HASH=<your my.telegram.org api_hash>
+HASLGRAM_REGISTRATION_VERIFY_URL=http://api:3000/api/auth/registration/verify
+HASLGRAM_REGISTRATION_PHONE_FIELD=phoneE164
+HASLGRAM_REGISTRATION_SUCCESS_FIELD=success
+# Optional if the NestJS endpoint requires a service-to-service bearer token:
+HASLGRAM_REGISTRATION_VERIFY_TOKEN=<private service token>
+~~~
+
+The URL and body field above are integration defaults, not proof of the current NestJS controller contract. Verify the real route and DTO in the existing gift-engine backend before starting BFF. Set HASLGRAM_REGISTRATION_PHONE_FIELD=phoneNumber if that is the DTO field. Set HASLGRAM_REGISTRATION_SUCCESS_FIELD to the boolean response field returned by the controller (success, valid, verified, or ok). The adapter fails closed unless that field is true. For public endpoints use HTTPS; plain HTTP is accepted only for the named private Docker services in the adapter. The API hash is not written into Git or server logs.
+
+Teamgram's login screen reports a six-digit code length, but the code itself is issued by @HaslGramRegBot; the internal Teamgram random value is never accepted. auth.resendCode is deliberately disabled so a client cannot obtain an alternate code through the old SMS path. Ask the bot for a fresh code instead.
+
+## Android application credentials and network routing
+
+The HaslGram Android build reads these from ignored local.properties or environment variables:
+
+~~~properties
+HASLGRAM_API_ID=123456
+HASLGRAM_API_HASH=0123456789abcdef0123456789abcdef
+HASLGRAM_MTPROTO_HOST=mtproto.your-domain.example
+HASLGRAM_MTPROTO_PORT=10443
+~~~
+
+The values above are examples only. The API ID/hash must match the BFF container values. The native client now has one MTProto datacenter, pointing only to the configured HaslGram gateway; it no longer contains Telegram production/test DC fallbacks. The default host is loopback for safe local builds and is not suitable for a public device.
+
+Push notifications remain disabled until a separate HaslGram Firebase project and matching google-services.json files are configured. The official Telegram Firebase project files have been removed from this branch. A debug APK is a test artifact, not a production release.

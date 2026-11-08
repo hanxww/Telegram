@@ -1,0 +1,61 @@
+name: Stage Teamgram on HaslGram VPS (no service start)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_dir:
+        description: Existing HaslGram parent directory on VPS
+        required: true
+        default: /opt/haslgram
+
+permissions:
+  contents: read
+
+jobs:
+  stage:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      VPS_HOST: ${{ secrets.HASLGRAM_VPS_HOST }}
+      VPS_USER: ${{ secrets.HASLGRAM_VPS_USER }}
+      VPS_SSH_KEY: ${{ secrets.HASLGRAM_VPS_SSH_PRIVATE_KEY }}
+      VPS_KNOWN_HOSTS: ${{ secrets.HASLGRAM_VPS_KNOWN_HOSTS }}
+      TARGET_DIR: ${{ inputs.target_dir }}
+    steps:
+      - name: Validate SSH settings
+        shell: bash
+        run: |
+          test -n "$VPS_HOST" || { echo "Set secret HASLGRAM_VPS_HOST"; exit 1; }
+          test -n "$VPS_USER" || { echo "Set secret HASLGRAM_VPS_USER"; exit 1; }
+          test -n "$VPS_SSH_KEY" || { echo "Set secret HASLGRAM_VPS_SSH_PRIVATE_KEY"; exit 1; }
+          test -n "$VPS_KNOWN_HOSTS" || { echo "Set secret HASLGRAM_VPS_KNOWN_HOSTS"; exit 1; }
+          [[ "$TARGET_DIR" =~ ^/opt/haslgram(/[A-Za-z0-9._-]+)*$ ]] || { echo "target_dir must stay under /opt/haslgram"; exit 1; }
+      - name: Configure verified SSH
+        shell: bash
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+      - name: Stage a separate Teamgram checkout
+        shell: bash
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o BatchMode=yes -o StrictHostKeyChecking=yes "$VPS_USER@$VPS_HOST" \
+            "set -euo pipefail
+             TARGET_DIR='$TARGET_DIR'
+             mkdir -p \"\$TARGET_DIR\"
+             if [ -e \"\$TARGET_DIR/haslgram-platform\" ]; then
+               echo 'Refusing to overwrite existing haslgram-platform checkout.'
+               exit 1
+             fi
+             if [ -e \"\$TARGET_DIR/teamgram-server\" ]; then
+               echo 'Refusing to overwrite existing Teamgram server directory.'
+               exit 1
+             fi
+             git clone --depth=1 --filter=blob:none --sparse --branch haslgram-teamgram https://github.com/hanxww/Telegram.git \"\$TARGET_DIR/haslgram-platform\"
+             cd \"\$TARGET_DIR/haslgram-platform\"
+             git sparse-checkout set deploy/teamgram
+             bash deploy/teamgram/preflight.sh
+             bash deploy/teamgram/stage.sh \"\$TARGET_DIR/teamgram-server\"
+             echo 'Teamgram source staged only. No containers started and no firewall changed.'"

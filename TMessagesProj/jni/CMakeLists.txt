@@ -141,7 +141,7 @@ set_target_properties(tgnet PROPERTIES
         ANDROID_ARM_MODE arm)
 target_compile_definitions(tgnet PUBLIC
         HAVE_PTHREAD
-        HASLGRAM_MTPROTO_HOST=\\"${HASLGRAM_MTPROTO_HOST}\\"
+        HASLGRAM_MTPROTO_HOST="${HASLGRAM_MTPROTO_HOST}"
         HASLGRAM_MTPROTO_PORT=${HASLGRAM_MTPROTO_PORT})
 target_include_directories(tgnet PUBLIC
         third_party/boringssl/include

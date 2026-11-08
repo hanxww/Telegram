@@ -1,0 +1,25 @@
+name: HaslGram gift catalog metadata checks
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [haslgram-teamgram]
+    paths:
+      - 'tools/gift_catalog/**'
+      - '.github/workflows/haslgram-gift-metadata-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test metadata mapping without secrets or Telegram network
+        run: |
+          python3 -m py_compile tools/gift_catalog/export_telegram_catalog.py
+          python3 -m unittest discover -s tools/gift_catalog -p 'test_*.py' -v
